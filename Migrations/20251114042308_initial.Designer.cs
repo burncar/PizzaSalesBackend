@@ -12,7 +12,7 @@ using PizzaSalesBackend.Data;
 namespace PizzaSalesBackend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251114024645_initial")]
+    [Migration("20251114042308_initial")]
     partial class initial
     {
         /// <inheritdoc />

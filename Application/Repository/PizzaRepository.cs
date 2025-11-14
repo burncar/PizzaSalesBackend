@@ -22,9 +22,10 @@ namespace PizzaSalesBackend.Application.Repository
             var query = _db.Pizzas.Include(a => a.PizzaType).AsQueryable();
             if (!string.IsNullOrWhiteSpace(SearchString))
             {
-                query = query.Where(q => q.Price.ToString().Contains(SearchString));
-                query = query.Where(q => q.Size.ToString().Contains(SearchString));
-                query = query.Where(q => q.PizzaType.Name.Contains(SearchString));
+                query = query.Where(q =>
+                q.Price.ToString().Contains(SearchString) ||
+                q.Size.ToString().Contains(SearchString) ||
+                q.PizzaType.Name.Contains(SearchString));
             }
             int count = await query.CountAsync();
             query = query
