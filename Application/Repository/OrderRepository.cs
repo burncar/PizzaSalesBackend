@@ -19,7 +19,6 @@ namespace OrderSalesBackend.Application.Repository
         public async Task<ApiResponse> GetAll(
             DateTime FromDate = default,
             DateTime ToDate = default,
-
             int PageNumber = 1, 
             int PageSize = 20)
         {
