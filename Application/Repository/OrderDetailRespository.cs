@@ -25,7 +25,6 @@ namespace OrderDetailSalesBackend.Application.Repository
                 .AsQueryable();
             if (!string.IsNullOrWhiteSpace(SearchString))
             {
-
                 query = query.Where(q => q.Pizza.PizzaType.Name.Contains(SearchString));
             }
             int count = await query.CountAsync();

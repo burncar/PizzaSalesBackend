@@ -9,6 +9,6 @@ namespace PizzaSalesBackend.Model.Entities
         public DateTime Date { get; set; }
         public TimeSpan Time { get; set; }
 
-        public ICollection<OrderDetail> OrderDetails { get; set; }
+        //public ICollection<OrderDetail> OrderDetails { get; set; }
     }
 }

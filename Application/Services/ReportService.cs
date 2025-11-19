@@ -11,14 +11,18 @@ namespace PizzaSalesBackend.Application.Services
         {
             _unitOfWork = unitOfWork;
         }
-        public async Task<ApiResponse> GetTopSellingPizzas(string SearchString = "", int PageNumber = 1, int PageSize = 10)
+        public async Task<ApiResponse> GetTopSellingPizzas(
+              DateTime fromDate = default,
+            DateTime toDate = default,
+            string SearchString = "", int PageNumber = 1, int PageSize = 10)
         {
-            var result = await _unitOfWork.Reports.TopSellingPizza(SearchString, PageNumber, PageSize);
+            var result = await _unitOfWork.Reports.TopSellingPizza(fromDate, toDate,SearchString, PageNumber, PageSize);
             return result;
         }
-        public async Task<ApiResponse> GetMonthlySales(string SearchString = "", int PageNumber = 1, int PageSize = 10)
+        public async Task<ApiResponse> GetMonthlySales(DateTime fromDate = default,
+            DateTime toDate = default, int PageNumber = 1, int PageSize = 10)
         {
-            var result = await _unitOfWork.Reports.MonthlySales(SearchString, PageNumber, PageSize);
+            var result = await _unitOfWork.Reports.MonthlySales(fromDate,toDate, PageNumber, PageSize);
             return result;
         }
 

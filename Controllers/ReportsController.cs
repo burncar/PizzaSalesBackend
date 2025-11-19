@@ -16,20 +16,23 @@ namespace PizzaSalesBackend.Controllers
         }
         [HttpGet("TopSellingPizzas")]
         public async Task<IActionResult> GetTopSellingPizzas(
+             DateTime fromDate = default,
+            DateTime toDate = default,
             string SearchString = "",
             int PageNumber = 1,
             int PageSize = 10)
         {
-            var result = await _service.GetTopSellingPizzas(SearchString, PageNumber, PageSize);
+            var result = await _service.GetTopSellingPizzas(fromDate, toDate, SearchString, PageNumber, PageSize);
             return StatusCode((int)result.StatusCode, result);
         }
         [HttpGet("MonthlySales")]
         public async Task<IActionResult> GetMonthlySales(
-            string SearchString = "",
+             DateTime fromDate = default,
+            DateTime toDate = default,
             int PageNumber = 1,
             int PageSize = 10)
         {
-            var result = await _service.GetMonthlySales(SearchString, PageNumber, PageSize);
+            var result = await _service.GetMonthlySales(fromDate,toDate, PageNumber, PageSize);
             return StatusCode((int)result.StatusCode, result);
         }
 

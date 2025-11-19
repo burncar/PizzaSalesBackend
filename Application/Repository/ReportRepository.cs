@@ -12,28 +12,43 @@ namespace PizzaSalesBackend.Application.Repository
         {
             _db = db;
         }
-        public async Task<ApiResponse> TopSellingPizza(string SearchString = "", int PageNumber = 1, int PageSize = 10)
+        public async Task<ApiResponse> TopSellingPizza(
+            DateTime fromDate=default,
+            DateTime toDate=default,
+            string SearchString = "", 
+            int PageNumber = 1, 
+            int PageSize = 10)
         {
 
             var topPizzas = _db.OrderDetails
-                //.Include(od => od.Pizza)
-                //.ThenInclude(p => p.PizzaType)
-                .GroupBy(od => od.Pizza.PizzaType.Name)
-                .Select(g => new
-                {
-                    PizzaName = g.Key,
-                    TotalQuantity = g.Sum(x => x.Quantity),
-                    TotalSales = g.Sum(x => x.Quantity * x.Pizza.Price)
-                })
-                .OrderByDescending(x => x.TotalSales).AsQueryable();
-                
+                .Include(a => a.Order)
+                .Include(a => a.Pizza)
+                .ThenInclude(a => a.PizzaType)
+                .AsQueryable();
+            if (fromDate != default && toDate != default)
+                topPizzas = topPizzas.Where(a => a.Order.Date >= fromDate.Date && a.Order.Date <= toDate.Date);
+
             if (!string.IsNullOrWhiteSpace(SearchString))
             {
 
-                topPizzas = topPizzas.Where(q => q.PizzaName.Contains(SearchString));
+                topPizzas = topPizzas.Where(q => q.Pizza.PizzaType.Name.Contains(SearchString));
             }
-            int count = await topPizzas.CountAsync();
-            topPizzas = topPizzas
+
+            var filteredTopPizzas = topPizzas.GroupBy(od => od.Pizza.PizzaType.Name)
+                .Select(g => new
+                {
+                    
+                    PizzaName = g.Key,
+                    TotalQuantity = g.Sum(x => x.Quantity),
+                    TotalSales = g.Sum(x => x.Quantity * x.Pizza.Price),
+                    FirstOrderDate = g.Min(x => x.Order.Date),
+                    LastOrderDate = g.Max(x => x.Order.Date),
+                })
+                .OrderByDescending(x => x.TotalSales).AsQueryable();
+                
+           
+            int count = await filteredTopPizzas.CountAsync();
+            filteredTopPizzas = filteredTopPizzas
                     .Skip((PageNumber - 1) * PageSize)
                     .Take(PageSize);
 
@@ -41,35 +56,48 @@ namespace PizzaSalesBackend.Application.Repository
             {
                 TotalCount = count,
                 IsSuccess = true,
-                Result = await topPizzas.ToListAsync(),
+                Result = await filteredTopPizzas.ToListAsync(),
                 StatusCode = System.Net.HttpStatusCode.OK,
             };
             return res;
         }
 
-        public async Task<ApiResponse> MonthlySales(string SearchString = "", int PageNumber = 1, int PageSize = 10)
+        public async Task<ApiResponse> MonthlySales(
+            DateTime fromDate = default,
+            DateTime toDate = default,
+           int PageNumber = 1, int PageSize = 10)
         {
-            var monthlySales = _db.Orders
-                .GroupBy(o => new { o.Date.Year, o.Date.Month })
-                .Select(g => new {
-                    PizzaNames = g.SelectMany(o => o.OrderDetails)
-                      .Select(od => od.Pizza.PizzaType.Name)
-                      .Distinct()
-                      .ToList(),
-                    Month = $"{g.Key.Month}/{g.Key.Year}",
-                    TotalOrders = g.Count(),
-                    TotalRevenue = g.SelectMany(o => o.OrderDetails)
-                                    .Sum(od => od.Quantity * od.Pizza.Price),
-                    TotalItemsSold = g.Sum(o => o.OrderDetails
-                     .Sum(od => od.Quantity))
+            var query = _db.OrderDetails
+                .Include(a => a.Order)
+                .Include(a => a.Pizza)
+                .ThenInclude(a => a.PizzaType)
+                .OrderBy(a => a.Order.Date.Date)
+                .AsQueryable();
 
-                }).AsQueryable();
+            if (fromDate != default && toDate != default)
+                query = query.Where(a => a.Order.Date >= fromDate.Date && a.Order.Date <= toDate.Date);
+            var monthlySales = query
+                
+                .GroupBy(o => new { o.Order.Date.Year, o.Order.Date.Month })
+                .Select(g => new
+                {
+                    OrderYear = g.Key.Year,
+                    OrderMonth = g.Key.Month,
+                    Date = $"{g.Key.Month}/{g.Key.Year}",
+                    TotalOrders = g.Select(o => o.OrderId).Distinct().Count(), // count unique orders
+                    TotalRevenue = g.Sum(o => o.Quantity * o.Pizza.Price),
+                    TotalItemsSold = g.Sum(o => o.Quantity),
+                }).OrderBy(a => a.OrderYear)
+                .ThenBy(a => a.OrderMonth)
+                .Select(a => new
+                {
+                    a.Date,
+                    a.TotalOrders,
+                    a.TotalRevenue,
+                    a.TotalItemsSold
+                })
+                .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(SearchString))
-            {
-
-                monthlySales = monthlySales.Where(q => q.PizzaNames.Contains(SearchString));
-            }
             int count = await monthlySales.CountAsync();
             monthlySales = monthlySales
                     .Skip((PageNumber - 1) * PageSize)
@@ -77,7 +105,7 @@ namespace PizzaSalesBackend.Application.Repository
 
             var res = new ApiResponse
             {
-                TotalCount = count,
+                TotalCount = 0,
                 IsSuccess = true,
                 Result = await monthlySales.ToListAsync(),
                 StatusCode = System.Net.HttpStatusCode.OK,
